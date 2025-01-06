@@ -60,10 +60,12 @@ class VeeamPlugin extends ib {
             )
         );
     }
+
+    function GetVeeamPluginLabels() { }
 }
 
 
-function GetVeeamPluginLabels() { }
+
 
     // private $config;
     // private $api;

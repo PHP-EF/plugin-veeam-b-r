@@ -61,7 +61,7 @@ class VeeamPlugin extends ib {
         );
     }
 
-    function GetVeeamPluginLabels() { }
+    // function GetVeeamPluginLabels() { }
 }
 
 

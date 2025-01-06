@@ -61,6 +61,10 @@ class VeeamPlugin extends ib {
         );
     }
 }
+
+
+function GetVeeamPluginLabels() { }
+
     // private $config;
     // private $api;
     // private $token;

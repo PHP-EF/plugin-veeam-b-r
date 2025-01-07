@@ -10,7 +10,7 @@ $GLOBALS['plugins']['VeeamPlugin'] = [ // Plugin Name
 	'author' => 'TinyTechLabUK', // Who wrote the plugin
 	'category' => 'Veeam B&R', // One to Two Word Description
 	'link' => 'https://github.com/PHP-EF/plugin-veeam-b-r', // Link to plugin info
-	'version' => '1.0.1', // SemVer of plugin
+	'version' => '1.0.2', // SemVer of plugin
 	'image' => 'logo.png', // 1:1 non transparent image for plugin
 	'settings' => true, // does plugin need a settings modal?
 	'api' => '/api/plugin/VeeamPlugin/settings', // api route for settings page, or null if no settings page
@@ -21,7 +21,7 @@ class VeeamPlugin extends ib {
         parent::__construct();
     }
 
-    //Protected function to define the settings for this plugin
+        //Protected function to define the settings for this plugin
     public function _pluginGetSettings() {
         return array(
             'Plugin Settings' => array(
@@ -47,7 +47,7 @@ class VeeamPlugin extends ib {
         );
     }
 
-    //Protected function to define the api and build the required api for the plugin
+        //Protected function to define the api and build the required api for the plugin
     private function getApiEndpoint($path) {
         $baseUrl = $this->getVeeamUrl();
         // Ensure path starts with /api
@@ -59,7 +59,7 @@ class VeeamPlugin extends ib {
         return $url;
     }
 
-    //Protected function to define the Veam URL to build the required URI for the Veeam Plugin
+        //Protected function to define the Veam URL to build the required URI for the Veeam Plugin
     private function getVeeamUrl() {
         $config = $this->config->get('Plugins', 'VeeamPlugin');
         if (!isset($config['Veeam-URL']) || empty($config['Veeam-URL'])) {
@@ -70,7 +70,7 @@ class VeeamPlugin extends ib {
         return rtrim($config['Veeam-URL'], '/');
     }
 
-    //Protected function to decrypt the password and build out a valid token for Veeam Plugin
+        //Protected function to decrypt the password and build out a valid token for Veeam Plugin
     private function getAccessToken($config) {
         // Check if we have a valid token
         if ($this->accessToken && $this->tokenExpiration && time() < $this->tokenExpiration) {
@@ -151,7 +151,7 @@ class VeeamPlugin extends ib {
     }
 
 
-    //Protected function to for making API Request to Veeam for Get/Post/Put/Delete
+        //Protected function to for making API Request to Veeam for Get/Post/Put/Delete
     public function makeApiRequest($Method, $Uri, $Data = "") {
         $config = $this->config->get('Plugins', 'VeeamPlugin');
         if (!isset($config['Veeam-URL']) || empty($config['Veeam-URL'])) {
@@ -185,8 +185,14 @@ class VeeamPlugin extends ib {
             return $Result;    
         }
     }
+    private function refreshAuth() {
+        // Refresh authentication logic here
+        // For now, just reset the access token
+        $this->accessToken = null;
+        $this->tokenExpiration = null;
+    }
 
-//// Everything after this line (188) is features and is permitted to be edited to build out the plugin features
+        //// Everything after this line (188) is features and is permitted to be edited to build out the plugin features
 
     public function getJobStatus() {
         try {
@@ -194,12 +200,12 @@ class VeeamPlugin extends ib {
                 throw new Exception("Access Denied - Missing READ permissions");
             }
 
-            // Get all jobs states
+            // Get all jobs sessions
             $states = $this->makeApiRequest("GET", "v1/jobs/states");
             
             // For debugging
-            // echo "States Data Response:\n";
-            // print_r($states);
+            echo "States Data Response:\n";
+            print_r($states);
             
             if (!$states) {
                 $this->api->setAPIResponse('Error', 'Failed to retrieve job states');
@@ -267,6 +273,22 @@ class VeeamPlugin extends ib {
             
         } catch (Exception $e) {
             error_log("Error getting backup jobs: " . $e->getMessage());
+            $this->api->setAPIResponse('Error', $e->getMessage());
+            return false;
+        }
+    }
+
+    public function GetSessionsJobs() {
+        try {
+            if (!$this->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
+                throw new Exception("Access Denied - Missing READ permissions");
+            }
+
+            $sessions = $this->makeApiRequest("GET", "v1/sessions");
+            $this->api->setAPIResponse('Success', 'Sessions retrieved');
+            $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
+            return true;
+        } catch (Exception $e) {
             $this->api->setAPIResponse('Error', $e->getMessage());
             return false;
         }

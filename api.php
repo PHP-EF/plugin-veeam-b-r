@@ -44,3 +44,20 @@ $app->get('/plugin/VeeamPlugin/jobsstatus', function ($request, $response, $args
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')
         ->withStatus(200);
 });
+
+// Get Veeam Backup Jobs Sessions
+$app->get('/plugin/VeeamPlugin/jobssessions', function ($request, $response, $args) {
+    $VeeamPlugin = new VeeamPlugin();
+    $VeeamPlugin->GetSessionsJobs();
+    
+    $responseData = [
+        'result' => $GLOBALS['api']['result'],
+        'message' => $GLOBALS['api']['message'],
+        'data' => $GLOBALS['api']['data']
+    ];
+    
+    $response->getBody()->write(json_encode($responseData));
+    return $response
+        ->withHeader('Content-Type', 'application/json')
+        ->withStatus(200);
+});

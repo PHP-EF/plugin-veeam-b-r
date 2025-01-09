@@ -10,13 +10,13 @@ $GLOBALS['plugins']['VeeamPlugin'] = [ // Plugin Name
 	'author' => 'TinyTechLabUK', // Who wrote the plugin
 	'category' => 'Veeam B&R', // One to Two Word Description
 	'link' => 'https://github.com/PHP-EF/plugin-veeam-b-r', // Link to plugin info
-	'version' => '1.0.2', // SemVer of plugin
+	'version' => '1.0.0.1', // SemVer of plugin
 	'image' => 'logo.png', // 1:1 non transparent image for plugin
 	'settings' => true, // does plugin need a settings modal?
 	'api' => '/api/plugin/VeeamPlugin/settings', // api route for settings page, or null if no settings page
 ];
 
-class VeeamPlugin extends phpef {
+class VeeamPlugin extends ib {
     public function __construct() {
         parent::__construct();
     }
@@ -155,33 +155,42 @@ class VeeamPlugin extends phpef {
     public function makeApiRequest($Method, $Uri, $Data = "") {
         $config = $this->config->get('Plugins', 'VeeamPlugin');
         if (!isset($config['Veeam-URL']) || empty($config['Veeam-URL'])) {
+            error_log("Veeam URL Missing in config");
             $this->api->setAPIResponse('Error','Veeam URL Missing');
             return false;
         }
+        
         $veeamtoken = $this->getAccessToken($config);
         if (!isset($veeamtoken) || empty($veeamtoken)) {
+            error_log("Veeam API Token Missing");
             $this->api->setAPIResponse('Error','Veeam API Key Missing');
             return false;
         }
+        
         $headers = array(
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $veeamtoken,
             'Content-Type' => 'application/x-www-form-urlencoded',
             'x-api-version' => '1.2-rev0'
         );
+        
         $VeeamURL = $config['Veeam-URL'].'/api/'.$Uri;
-        // echo $VeeamURL; //Used for diagnostics to make sure the Veeam URL is constructed correctly.
+        error_log("Making request to Veeam URL: " . $VeeamURL);
+        error_log("Request Headers: " . print_r($headers, true));
+        
         if (in_array($Method,["GET","get"])) {
             $Result = $this->api->query->$Method($VeeamURL,$headers);
         } else {
             $Result = $this->api->query->$Method($VeeamURL,$Data,$headers);
         }
-        // $Result = $this->api->query->$Method($VeeamURL,$headers);
-        // print_r($Result);  //Used for out put of $Result or $haader for diagnostics
+        
+        error_log("API Result: " . print_r($Result, true));
+        
         if (isset($Result->status_code)){
+            error_log("API Error - Status Code: " . $Result->status_code);
             $this->api->setAPIResponse('Error',$Result->status_code);
             return false;
-        }else{
+        } else {
             return $Result;    
         }
     }
@@ -192,93 +201,9 @@ class VeeamPlugin extends phpef {
         $this->tokenExpiration = null;
     }
 
-        //// Everything after this line (188) is features and is permitted to be edited to build out the plugin features
+        //// Everything after this line (204) is features and is permitted to be edited to build out the plugin features
 
-    public function getJobStatus() {
-        try {
-            if (!$this->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
-                throw new Exception("Access Denied - Missing READ permissions");
-            }
-
-            // Get all jobs sessions
-            $states = $this->makeApiRequest("GET", "v1/jobs/states");
-            
-            // For debugging
-            echo "States Data Response:\n";
-            print_r($states);
-            
-            if (!$states) {
-                $this->api->setAPIResponse('Error', 'Failed to retrieve job states');
-                return false;
-            }
-
-            $jobStates = [];
-            if (isset($states['data'])) {
-                $jobStates = $states['data'];
-            }
-
-            $this->api->setAPIResponse('Success', 'Retrieved ' . count($jobStates) . ' job states');
-            $this->api->setAPIResponseData($jobStates);
-            return true;
-        } catch (Exception $e) {
-            $this->api->setAPIResponse('Error', $e->getMessage());
-            return false;
-        }
-    }
-
-    public function getBackupJobs() {
-        try {
-            if (!$this->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
-                throw new Exception("Access Denied - Missing READ permissions");
-            }
-
-            $jobsData = $this->makeApiRequest("GET","v1/jobs");
-            if (!$jobsData) {
-                return false;
-            }
-            
-            echo "Jobs Data Response:\n";
-            print_r($jobsData);
-            
-            $jobs = [];
-            if (isset($jobsData->data)) {
-                $jobs = $jobsData->data;
-                echo "\nParsed Jobs:\n";
-                print_r($jobs);
-            } 
-            
-            // $formattedJobs = [];
-            // foreach ($jobs as $job) {
-            //     if (!is_array($job)) continue;
-                
-            //     $formattedJob = [
-            //         'id' => $job->id ?? $job->Id ?? '',
-            //         'name' => $job->name ?? $job->Name ?? '',
-            //         'description' => $job->description ?? $job->Description ?? '',
-            //         'type' => $job->type ?? $job->Type ?? '',
-            //         'status' => $job->status ?? $job->Status ?? '',
-            //         'lastRun' => $job->lastRun ?? $job->LastRun ?? '',
-            //         'nextRun' => $job->nextRun ?? $job->NextRun ?? '',
-            //         'target' => $job->target ?? $job->Target ?? '',
-            //         'repository' => $job->repository ?? $job->Repository ?? '',
-            //         'enabled' => $job->enabled ?? $job->Enabled ?? false
-            //     ];
-                
-            //     $formattedJobs[] = $formattedJob;
-            // }
-            
-            $this->api->setAPIResponse('Success', 'Retrieved ' . count($jobs) . ' backup jobs');
-            $this->api->setAPIResponseData($jobs); //$formattedJobs
-            return true;
-            
-        } catch (Exception $e) {
-            error_log("Error getting backup jobs: " . $e->getMessage());
-            $this->api->setAPIResponse('Error', $e->getMessage());
-            return false;
-        }
-    }
-
-    public function GetSessionsJobs() {
+    public function GetSessions() {
         try {
             if (!$this->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
                 throw new Exception("Access Denied - Missing READ permissions");
@@ -289,6 +214,47 @@ class VeeamPlugin extends phpef {
             $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
             return true;
         } catch (Exception $e) {
+            $this->api->setAPIResponse('Error', $e->getMessage());
+            return false;
+        }
+    }
+
+    public function GetLicenseInstances() {
+        try {
+            $result = $this->makeApiRequest("GET", "v1/license/instances");
+            error_log("License API Result Type: " . gettype($result));
+            error_log("License API Raw Result: " . print_r($result, true));
+            
+            if ($result === false) {
+                throw new Exception("API call returned false");
+            }
+            
+            $this->api->setAPIResponse('Success', 'License report retrieved');
+            $this->api->setAPIResponseData($result);
+            return true;
+        } catch (Exception $e) {
+            error_log("License API Error: " . $e->getMessage());
+            $this->api->setAPIResponse('Error', $e->getMessage());
+            return false;
+        }
+    }
+
+    
+    public function GetSessionWithID($sessionid) {
+        try {
+            $result = $this->makeApiRequest("GET", "v1/sessions?sessionIdFilter=" . $sessionid);
+            error_log("Session API Result Type: " . gettype($result));
+            error_log("Session API Raw Result: " . print_r($result, true));
+            
+            if ($result === false) {
+                throw new Exception("API call returned false");
+            }
+            
+            $this->api->setAPIResponse('Success', 'Session retrieved');
+            $this->api->setAPIResponseData($result);
+            return true;
+        } catch (Exception $e) {
+            error_log("Session API Error: " . $e->getMessage());
             $this->api->setAPIResponse('Error', $e->getMessage());
             return false;
         }

@@ -240,9 +240,9 @@ class VeeamPlugin extends phpef {
     }
 
     
-    public function GetSessionWithID($sessionid) {
+    public function GetTaskSessionsFromSessionID($sessionID) {
         try {
-            $result = $this->makeApiRequest("GET", "v1/sessions?sessionIdFilter=" . $sessionid);
+            $result = $this->makeApiRequest("GET", "v1/taskSessions?sessionIdFilter=" . $sessionID);
             error_log("Session API Result Type: " . gettype($result));
             error_log("Session API Raw Result: " . print_r($result, true));
             

@@ -117,51 +117,38 @@ return '
                     <h3 class="card-title">Veeam Backup Sessions</h3>
                 </div>
                 <div class="card-body">
-
-
-
-
-                <table data-url="/api/plugin/VeeamPlugin/sessions"
-                    data-data-field="data"
-                    data-toggle="table"
-                    data-search="true"
-                    data-filter-control="true"
-                    data-show-filter-control-switch="true"
-                    data-filter-control-visible="false"
-                    data-show-refresh="true"
-                    data-pagination="true"
-                    data-toolbar="#toolbar"
-                    data-sort-name="Name"
-                    data-sort-order="asc"
-                    data-page-size="25"
-                    // data-buttons="rbacGroupsButtons"
-                    // data-buttons-order="btnAddGroup,refresh"
-                    class="table table-striped" id="VeeamPluginSessionTable">
-                    <thead>
-                    <tr>
-                        <th data-field="state" data-checkbox="true"></th>
-                        <th data-field="name" data-sortable="true" data-filter-control="select">Job Name</th>
-                        <th data-field="creationTime" data-sortable="true" data-formatter="datetimeFormatter" data-filter-control="input">Start Time</th>
-                        <th data-field="endTime" data-sortable="true" data-formatter="datetimeFormatter" data-filter-control="input">End Time</th>
-                        <th data-field="progressPercent" data-sortable="true">Progress</th>
-                        <th data-field="result.result" data-sortable="true">Result</th>
-                        <th data-field="result.message" data-sortable="true">Result Message</th>
-                        <th data-field="result.isCanceled" data-sortable="true">Result Cancelled</th>
-                        <th data-formatter="veeamButtonFormatter" data-events="veeamButtonEvents">Actions</th>
-                    </tr>
-                    </thead>
-                    <tbody id="veeamSessions"></tbody>
-                </table>
-                    <div class="table-responsive">
-                        <table id="veeamSessionsTable" class="table table-striped">
-                            <thead>
-                                <tr>
-                            </thead>
-                            <tbody>
-                                <!-- Data will be populated by JavaScript -->
-                            </tbody>
-                        </table>
-                    </div>
+                    <table data-url="/api/plugin/VeeamPlugin/sessions"
+                        data-data-field="data"
+                        data-toggle="table"
+                        data-search="true"
+                        data-filter-control="true"
+                        data-show-filter-control-switch="true"
+                        data-filter-control-visible="false"
+                        data-show-refresh="true"
+                        data-pagination="true"
+                        data-toolbar="#toolbar"
+                        data-sort-name="Name"
+                        data-sort-order="asc"
+                        data-show-columns="true"
+                        data-page-size="25"
+                        // data-buttons="rbacGroupsButtons"
+                        // data-buttons-order="btnAddGroup,refresh"
+                        class="table table-striped" id="VeeamPluginSessionTable">
+                        <thead>
+                        <tr>
+                            <th data-field="state" data-checkbox="true"></th>
+                            <th data-field="name" data-sortable="true" data-filter-control="select">Job Name</th>
+                            <th data-field="creationTime" data-sortable="true" data-formatter="datetimeFormatter" data-filter-control="input">Start Time</th>
+                            <th data-field="endTime" data-sortable="true" data-formatter="datetimeFormatter" data-filter-control="input">End Time</th>
+                            <th data-field="result.message" data-sortable="true" data-visible="false" data-filter-control="input">Message</th>
+                            <th data-formatter="progressFormatter" data-field="progressPercent" data-sortable="true" data-filter-control="input">Progress</th>
+                            <th data-formatter="veeamResultFormatter" data-field="result.result" data-sortable="true" data-filter-control="select">Result</th>
+                            <th data-formatter="veeamCanceledFormatter" data-field="result.isCanceled" data-sortable="true" data-filter-control="select">Cancelled</th>
+                            <th data-formatter="veeamButtonFormatter" data-events="veeamButtonEvents">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody id="veeamSessions"></tbody>
+                    </table>
                 </div>
             </div>
         </div>

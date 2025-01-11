@@ -25,39 +25,32 @@ $app->get('/plugin/VeeamPlugin/test-auth', function ($request, $response, $args)
         ->withStatus($GLOBALS['responseCode']);
 });
 
-// Get Veeam Backup Jobs
-$app->get('/plugin/VeeamPlugin/jobs', function ($request, $response, $args) {
+// Get Veeam License Report
+$app->get('/plugin/VeeamPlugin/licenseinstances', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->getBackupJobs();
+    $VeeamPlugin->GetLicenseCreateReport();
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')
         ->withStatus($GLOBALS['responseCode']);
 });
 
-// Get Veeam Backup Jobs Status
-$app->get('/plugin/VeeamPlugin/jobsstatus', function ($request, $response, $args) {
+// Get Veeam Backup Sessions
+$app->get('/plugin/VeeamPlugin/sessions', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->getJobStatus();
+    $VeeamPlugin->GetSessions();
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')
-        ->withStatus(200);
+        ->withStatus($GLOBALS['responseCode']);
 });
 
-// Get Veeam Backup Jobs Sessions
-$app->get('/plugin/VeeamPlugin/jobssessions', function ($request, $response, $args) {
+// Get Veeam Backup Session with ID
+$app->get('/plugin/VeeamPlugin/sessions/{session_id}/taskSessions', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->GetSessionsJobs();
-    
-    $responseData = [
-        'result' => $GLOBALS['api']['result'],
-        'message' => $GLOBALS['api']['message'],
-        'data' => $GLOBALS['api']['data']
-    ];
-    
-    $response->getBody()->write(json_encode($responseData));
+    $VeeamPlugin->GetSessionWithID($args['session_id']);
+    $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
-        ->withHeader('Content-Type', 'application/json')
-        ->withStatus(200);
+        ->withHeader('Content-Type', 'application/json;charset=UTF-8')
+        ->withStatus($GLOBALS['responseCode']);
 });

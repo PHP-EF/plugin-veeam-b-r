@@ -16,7 +16,7 @@ $GLOBALS['plugins']['VeeamPlugin'] = [ // Plugin Name
 	'api' => '/api/plugin/VeeamPlugin/settings', // api route for settings page, or null if no settings page
 ];
 
-class VeeamPlugin extends ib {
+class VeeamPlugin extends phpef {
     public function __construct() {
         parent::__construct();
     }

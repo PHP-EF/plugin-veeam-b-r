@@ -157,7 +157,7 @@ return '
 
 <!-- Modal for showing session details -->
 <div class="modal fade" id="sessionDetailsModal" tabindex="-1" aria-labelledby="sessionDetailsModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-xxl">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="sessionDetailsModalLabel">Session Details</h5>
@@ -176,6 +176,7 @@ return '
                     <div class="col-4"><strong>Canceled:</strong></div>
                     <div class="col-8" id="resultCanceled"></div>
                 </div>
+                <table class="table table-striped" id="taskSessionTable"></table>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

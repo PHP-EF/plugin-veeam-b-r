@@ -37,6 +37,7 @@ function veeamSessionDetailsPopulate(row) {
     $("#resultStatus").text(row.result.result).addClass(getStatusClass(row.result.result));
     $("#resultMessage").text(row.result.message);
     $("#resultCanceled").text(row.result.isCanceled);
+    buildTaskSessionTable(row.id);
     $("#sessionDetailsModal").modal("show");
 }
 
@@ -54,6 +55,110 @@ function getStatusClass(status) {
         case "None":
             return "bg-primary";
     }
+}
+
+function buildTaskSessionTable(sessionId) {
+    $.getJSON("/api/plugin/VeeamPlugin/sessions/"+sessionId+"/taskSessions", function(data) {
+        if (data["result"] == "Success") {
+            var tableData = data.data.data;
+            $("#taskSessionTable").bootstrapTable("destroy");
+            $("#taskSessionTable").bootstrapTable({
+            data: tableData,
+            sortable: true,
+            pagination: true,
+            search: true,
+            showExport: true,
+            exportTypes: ["json", "xml", "csv", "txt", "excel", "sql"],
+            showColumns: true,
+            showRefresh: true,
+            filterControl: true,
+            filterControlVisible: false,
+            showFilterControlSwitch: true,
+            buttons: "userButtons",
+            buttonsOrder: "btnAddUser,btnBulkDelete,refresh,columns,export,filterControlSwitch",
+            columns: [{
+                field: "algorithm",
+                title: "Algorithm",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "state",
+                title: "State",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "name",
+                title: "Name",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "result.result",
+                title: "Result",
+                formatter: "veeamResultFormatter",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "result.message",
+                title: "Message",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "result.isCanceled",
+                title: "Cancelled",
+                filterControl: "input",
+                formatter: "veeamCanceledFormatter",
+                sortable: true
+            },{
+                field: "progress.bottleneck",
+                title: "Bottleneck",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "progress.processingRate",
+                title: "Rate",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "progress.processedSize",
+                title: "Process Size",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "type",
+                title: "Type",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "sessionType",
+                title: "Session Type",
+                filterControl: "input",
+                sortable: true
+            },{
+                field: "creationTime",
+                title: "Creation  Date/Time",
+                filterControl: "input",
+                sortable: false,
+                visible: false,
+                formatter: "datetimeFormatter"
+            },{
+                field: "endTime",
+                title: "End Date/Time",
+                filterControl: "input",
+                sortable: false,
+                visible: false,
+                formatter: "datetimeFormatter"
+            }]
+            });
+            // Enable refresh button
+            $(`button[name="refresh"]`).click(function() {
+                buildTaskSessionTable();
+            });
+        } else {
+            toast(data["status"],"",data["message"],"danger","30000");
+        }
+    }).fail(function( data, status ) {
+        toast("API Error","","Unknown API Error","danger","30000");
+    })
 }
 
 $("#VeeamPluginSessionTable").bootstrapTable();

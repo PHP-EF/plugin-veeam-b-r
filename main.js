@@ -151,7 +151,7 @@ function buildTaskSessionTable(sessionId) {
             });
             // Enable refresh button
             $(`button[name="refresh"]`).click(function() {
-                buildTaskSessionTable();
+                buildTaskSessionTable(sessionId);
             });
         } else {
             toast(data["status"],"",data["message"],"danger","30000");

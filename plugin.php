@@ -104,6 +104,8 @@ class VeeamPlugin extends phpef {
                 if (!$VeeamToken) {
                     $this->logging->writeLog('VeeamPlugin', "Failed to refresh API token..", "error");
                     return false;
+                } else {
+                    $this->logging->writeLog('VeeamPlugin', "Successfully refreshed API token", "info");
                 }
                 $headers['Authorization'] = 'Bearer ' . $VeeamToken;
                 $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);

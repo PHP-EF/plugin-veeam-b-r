@@ -120,8 +120,8 @@ class VeeamPlugin extends phpef {
         $Password = $this->pluginConfig['Veeam-Password'] ?? null;
         $Token = $this->pluginConfig['Veeam-Token'] ?? null;
         // Check if we have a valid token
-        if (!$force && $Token && isset($Token['.expires']) && time() < $Token['.expires']) {
-            return $Token;
+        if (!$force && $Token['accessToken'] && isset($Token['expires']) && time() < $Token['expires']) {
+            return $Token['accessToken'];
         } else {
             try {
                 if (!isset($Username) || !isset($Password)) {
@@ -167,6 +167,12 @@ class VeeamPlugin extends phpef {
                     'accessToken' => $Result['access_token'],
                     'expires' => time() + ($Result['.expires'] ?? 3600)
                 );
+
+                $config = $this->config->get();
+                $data = [
+                    "Veeam-Token" => $tokenResult
+                ];
+                $this->config->setPlugin($config, $data, 'VeeamPlugin');
                 
                 return $tokenResult['accessToken'];
                 

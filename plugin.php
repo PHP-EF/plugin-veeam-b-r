@@ -73,44 +73,66 @@ class VeeamPlugin extends phpef {
 
     // Function to for making API Request to Veeam for Get/Post/Put/Delete
     public function makeApiRequest($Method, $Uri, $Data = "") {
-        if (!isset($this->pluginConfig['Veeam-URL']) || empty($this->pluginConfig['Veeam-URL'])) {
+        if (empty($this->pluginConfig['Veeam-URL'])) {
             error_log("Veeam URL Missing in config");
-            $this->api->setAPIResponse('Error','Veeam URL Missing');
+            $this->api->setAPIResponse('Error', 'Veeam URL Missing');
             return false;
         }
-        
-        $veeamtoken = $this->getAccessToken();
-        if (!isset($veeamtoken) || empty($veeamtoken)) {
+    
+        $VeeamToken = $this->getAccessToken();
+        if (empty($VeeamToken)) {
             error_log("Veeam API Token Missing");
-            $this->api->setAPIResponse('Error','Veeam API Key Missing');
+            $this->api->setAPIResponse('Error', 'Veeam API Key Missing');
             return false;
         }
-        
-        $headers = array(
+    
+        $headers = [
             'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $veeamtoken,
+            'Authorization' => 'Bearer ' . $VeeamToken,
             'Content-Type' => 'application/x-www-form-urlencoded',
             'x-api-version' => '1.2-rev0'
-        );
-        
-        $VeeamURL = $this->pluginConfig['Veeam-URL'].'/api/'.$Uri;
-        error_log("Making request to Veeam URL: " . $VeeamURL);
-        error_log("Request Headers: " . print_r($headers, true));
-        
-        if (in_array($Method,["GET","get"])) {
-            $Result = $this->api->query->$Method($VeeamURL,$headers);
-        } else {
-            $Result = $this->api->query->$Method($VeeamURL,$Data,$headers);
+        ];
+    
+        $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
+    
+        $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
+    
+        if (isset($Result->status_code) && $Result->status_code == 401) {
+            $this->logging->writeLog('VeeamPlugin', "Token invalid or expired, attempting refresh..", "info");
+            try {
+                $VeeamToken = $this->getAccessToken(true);
+                if (!$VeeamToken) {
+                    $this->logging->writeLog('VeeamPlugin', "Failed to refresh API token..", "error");
+                    return false;
+                }
+                $headers['Authorization'] = 'Bearer ' . $VeeamToken;
+                $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
+            } catch (Exception $e) {
+                $this->logging->writeLog('VeeamPlugin', "Error refreshing access token: " . $e->getMessage(), 'error');
+                throw $e;
+            }
         }
-        
-        error_log("API Result: " . print_r($Result, true));
-        
-        if (isset($Result->status_code)){
-            error_log("API Error - Status Code: " . $Result->status_code);
-            $this->api->setAPIResponse('Error',$Result->status_code);
+    
+        if (isset($Result->status_code) && $Result->status_code != 200) {
+            $this->api->setAPIResponse('Error', "HTTP Error: $Result->status_code");
+            $this->logging->writeLog('VeeamPlugin', "HTTP Error: $Result->status_code", "warning");
             return false;
-        } else {
-            return $Result;    
+        }
+    
+        return $Result;
+    }
+    
+    private function executeApiRequest($Method, $VeeamURL, $Data, $headers) {
+        try {
+            if (in_array($Method, ["GET", "get"])) {
+                return $this->api->query->$Method($VeeamURL, $headers);
+            } else {
+                return $this->api->query->$Method($VeeamURL, $Data, $headers);
+            }
+        } catch (Exception $e) {
+            $this->logging->writeLog('VeeamPlugin', "API request failed: " . $e->getMessage(), 'error');
+            $this->api->setAPIResponse('Error', 'API request failed');
+            return false;
         }
     }
 
@@ -194,9 +216,13 @@ class VeeamPlugin extends phpef {
             }
 
             $sessions = $this->makeApiRequest("GET", "v1/sessions");
-            $this->api->setAPIResponse('Success', 'Sessions retrieved');
-            $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
-            return true;
+            if (!empty($sessions)) {
+                $this->api->setAPIResponse('Success', 'Sessions retrieved');
+                $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
+                return true;
+            } else {
+                return false;
+            }
         } catch (Exception $e) {
             $this->api->setAPIResponse('Error', $e->getMessage());
             return false;

@@ -113,14 +113,12 @@ class VeeamPlugin extends phpef {
                 $this->logging->writeLog('VeeamPlugin', "Error refreshing access token: " . $e->getMessage(), 'error');
                 throw $e;
             }
+            if ($Result->status_code != 200) {
+                $this->api->setAPIResponse('Error', "HTTP Error: $Result->status_code");
+                $this->logging->writeLog('VeeamPlugin', "HTTP Error: $Result->status_code", "warning");
+                return false;
+            }
         }
-    
-        if (isset($Result->status_code) && $Result->status_code != 200) {
-            $this->api->setAPIResponse('Error', "HTTP Error: $Result->status_code");
-            $this->logging->writeLog('VeeamPlugin', "HTTP Error: $Result->status_code", "warning");
-            return false;
-        }
-    
         return $Result;
     }
     

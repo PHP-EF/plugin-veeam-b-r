@@ -18,7 +18,9 @@ $app->get('/plugin/VeeamPlugin/settings', function ($request, $response, $args) 
 // Get Veeam License Report
 $app->get('/plugin/VeeamPlugin/licenseinstances', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->GetLicenseInstances();
+    if ($VeeamPlugin->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
+        $VeeamPlugin->GetLicenseInstances();
+    }
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')
@@ -28,7 +30,9 @@ $app->get('/plugin/VeeamPlugin/licenseinstances', function ($request, $response,
 // Get Veeam Backup Sessions
 $app->get('/plugin/VeeamPlugin/sessions', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->GetSessions();
+    if ($VeeamPlugin->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
+        $VeeamPlugin->GetSessions();
+    }
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')
@@ -38,7 +42,9 @@ $app->get('/plugin/VeeamPlugin/sessions', function ($request, $response, $args) 
 // Get Veeam Backup Session with ID
 $app->get('/plugin/VeeamPlugin/sessions/{session_id}/taskSessions', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->GetTaskSessionsFromSessionID($args['session_id']);
+    if ($VeeamPlugin->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
+        $VeeamPlugin->GetTaskSessionsFromSessionID($args['session_id']);
+    }
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')

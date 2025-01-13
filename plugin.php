@@ -212,10 +212,6 @@ class VeeamPlugin extends phpef {
 
     public function GetSessions() {
         try {
-            if (!$this->auth->checkAccess($this->config->get("Plugins", "VeeamPlugin")['ACL-READ'] ?? "ACL-READ")) {
-                throw new Exception("Access Denied - Missing READ permissions");
-            }
-
             $sessions = $this->makeApiRequest("GET", "v1/sessions");
             if (!empty($sessions)) {
                 $this->api->setAPIResponse('Success', 'Sessions retrieved');

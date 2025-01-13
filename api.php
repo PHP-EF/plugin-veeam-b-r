@@ -15,20 +15,10 @@ $app->get('/plugin/VeeamPlugin/settings', function ($request, $response, $args) 
         ->withStatus($GLOBALS['responseCode']);
 });
 
-// Test Veeam Authentication
-$app->get('/plugin/VeeamPlugin/test-auth', function ($request, $response, $args) {
-    $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->testAuth();
-    $response->getBody()->write(jsonE($GLOBALS['api']));
-    return $response
-        ->withHeader('Content-Type', 'application/json;charset=UTF-8')
-        ->withStatus($GLOBALS['responseCode']);
-});
-
 // Get Veeam License Report
 $app->get('/plugin/VeeamPlugin/licenseinstances', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->GetLicenseCreateReport();
+    $VeeamPlugin->GetLicenseInstances();
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')
@@ -48,7 +38,7 @@ $app->get('/plugin/VeeamPlugin/sessions', function ($request, $response, $args) 
 // Get Veeam Backup Session with ID
 $app->get('/plugin/VeeamPlugin/sessions/{session_id}/taskSessions', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->GetSessionWithID($args['session_id']);
+    $VeeamPlugin->GetTaskSessionsFromSessionID($args['session_id']);
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')

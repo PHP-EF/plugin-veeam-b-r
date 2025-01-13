@@ -16,12 +16,15 @@ $GLOBALS['plugins']['VeeamPlugin'] = [ // Plugin Name
 	'api' => '/api/plugin/VeeamPlugin/settings', // api route for settings page, or null if no settings page
 ];
 
-class VeeamPlugin extends ib {
+class VeeamPlugin extends phpef {
+    private $pluginConfig;
+
     public function __construct() {
         parent::__construct();
+        $this->pluginConfig = $this->config->get('Plugins','VeeamPlugin') ?? [];
     }
 
-        //Protected function to define the settings for this plugin
+    // Function to define the settings for this plugin
     public function _pluginGetSettings() {
         return array(
             'Plugin Settings' => array(
@@ -46,8 +49,8 @@ class VeeamPlugin extends ib {
             )
         );
     }
-
-        //Protected function to define the api and build the required api for the plugin
+    
+    // Function to define the api and build the required api for the plugin
     private function getApiEndpoint($path) {
         $baseUrl = $this->getVeeamUrl();
         // Ensure path starts with /api
@@ -59,149 +62,153 @@ class VeeamPlugin extends ib {
         return $url;
     }
 
-        //Protected function to define the Veam URL to build the required URI for the Veeam Plugin
+    // Function to define the Veam URL to build the required URI for the Veeam Plugin
     private function getVeeamUrl() {
-        $config = $this->config->get('Plugins', 'VeeamPlugin');
-        if (!isset($config['Veeam-URL']) || empty($config['Veeam-URL'])) {
-            error_log("Veeam config: " . json_encode($config));
+        if (!isset($this->pluginConfig['Veeam-URL']) || empty($this->pluginConfig['Veeam-URL'])) {
             throw new Exception("Veeam URL not configured. Please set 'Veeam-URL' in config.json");
         }
         // Remove trailing slash if present
-        return rtrim($config['Veeam-URL'], '/');
+        return rtrim($this->pluginConfig['Veeam-URL'], '/');
     }
 
-        //Protected function to decrypt the password and build out a valid token for Veeam Plugin
-    private function getAccessToken($config) {
-        // Check if we have a valid token
-        if ($this->accessToken && $this->tokenExpiration && time() < $this->tokenExpiration) {
-            return $this->accessToken;
-        }
-
-        try {
-            // $config = $this->config->get('Plugins', 'VeeamPlugin');
-            if (!isset($config['Veeam-Username']) || !isset($config['Veeam-Password'])) {
-                throw new Exception("Veeam credentials not configured. Please set 'Veeam-Username' and 'Veeam-Password' in config.json");
-            }
-            try {
-                $VeeamPassword = decrypt($config['Veeam-Password'],$this->config->get('Security','salt'));
-            } catch (Exception $e) {
-                $this->api->setAPIResponse('Error','Unable to decrypt Veeam Password');
-                $this->logging->writeLog('VeeamPlugin','Unable to decrypt Veeam Password','error');
-                return false;
-            }
-
-            $baseUrl = $this->getVeeamUrl();
-            $url = $baseUrl . '/api/oauth2/token';
-            error_log("Getting token from: " . $url);
-            
-            $ch = curl_init();
-            curl_setopt_array($ch, [
-                CURLOPT_URL => $url,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_SSL_VERIFYPEER => false,
-                CURLOPT_SSL_VERIFYHOST => false,
-                CURLOPT_POST => true,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_CONNECTTIMEOUT => 10,
-                CURLOPT_PROTOCOLS => CURLPROTO_HTTPS | CURLPROTO_HTTP
-            ]);
-            
-            $headers = [
-                'Content-Type: application/x-www-form-urlencoded',
-                'Accept: application/json',
-                'x-api-version: 1.2-rev0'
-            ];
-            curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-            
-            $postData = http_build_query([
-                'grant_type' => 'password',
-                'username' => $config['Veeam-Username'],
-                'password' => $VeeamPassword
-            ]);
-            curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-            
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $error = curl_error($ch);
-            
-            curl_close($ch);
-            
-            if ($error) {
-                throw new Exception("Failed to get access token: " . $error);
-            }
-            
-            if ($httpCode >= 400) {
-                throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $response);
-            }
-            
-            $tokenData = json_decode($response, true);
-            if (!isset($tokenData['access_token'])) {
-                throw new Exception("Invalid token response: " . $response);
-            }
-            
-            $this->accessToken = $tokenData['access_token'];
-            $this->tokenExpiration = time() + ($tokenData['expires_in'] ?? 3600);
-            
-            return $this->accessToken;
-            
-        } catch (Exception $e) {
-            error_log("Error getting access token: " . $e->getMessage());
-            throw $e;
-        }
-    }
-
-
-        //Protected function to for making API Request to Veeam for Get/Post/Put/Delete
+    // Function to for making API Request to Veeam for Get/Post/Put/Delete
     public function makeApiRequest($Method, $Uri, $Data = "") {
-        $config = $this->config->get('Plugins', 'VeeamPlugin');
-        if (!isset($config['Veeam-URL']) || empty($config['Veeam-URL'])) {
+        if (empty($this->pluginConfig['Veeam-URL'])) {
             error_log("Veeam URL Missing in config");
-            $this->api->setAPIResponse('Error','Veeam URL Missing');
+            $this->api->setAPIResponse('Error', 'Veeam URL Missing');
             return false;
         }
-        
-        $veeamtoken = $this->getAccessToken($config);
-        if (!isset($veeamtoken) || empty($veeamtoken)) {
+    
+        $VeeamToken = $this->getAccessToken();
+        if (empty($VeeamToken)) {
             error_log("Veeam API Token Missing");
-            $this->api->setAPIResponse('Error','Veeam API Key Missing');
+            $this->api->setAPIResponse('Error', 'Veeam API Key Missing');
             return false;
         }
-        
-        $headers = array(
+    
+        $headers = [
             'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . $veeamtoken,
+            'Authorization' => 'Bearer ' . $VeeamToken,
             'Content-Type' => 'application/x-www-form-urlencoded',
             'x-api-version' => '1.2-rev0'
-        );
-        
-        $VeeamURL = $config['Veeam-URL'].'/api/'.$Uri;
-        error_log("Making request to Veeam URL: " . $VeeamURL);
-        error_log("Request Headers: " . print_r($headers, true));
-        
-        if (in_array($Method,["GET","get"])) {
-            $Result = $this->api->query->$Method($VeeamURL,$headers);
-        } else {
-            $Result = $this->api->query->$Method($VeeamURL,$Data,$headers);
+        ];
+    
+        $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
+    
+        $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
+    
+        if (isset($Result->status_code) && $Result->status_code == 401) {
+            $this->logging->writeLog('VeeamPlugin', "Token invalid or expired, attempting refresh..", "info");
+            try {
+                $VeeamToken = $this->getAccessToken(true);
+                if (!$VeeamToken) {
+                    $this->logging->writeLog('VeeamPlugin', "Failed to refresh API token..", "error");
+                    return false;
+                } else {
+                    $this->logging->writeLog('VeeamPlugin', "Successfully refreshed API token", "info");
+                }
+                $headers['Authorization'] = 'Bearer ' . $VeeamToken;
+                $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
+                return $Result;
+            } catch (Exception $e) {
+                $this->logging->writeLog('VeeamPlugin', "Error refreshing access token: " . $e->getMessage(), 'error');
+                throw $e;
+            }
         }
-        
-        error_log("API Result: " . print_r($Result, true));
-        
-        if (isset($Result->status_code)){
-            error_log("API Error - Status Code: " . $Result->status_code);
-            $this->api->setAPIResponse('Error',$Result->status_code);
+        if (isset($Result->status_code) && $Result->status_code != 200) {
+            $this->api->setAPIResponse('Error', "HTTP Error: $Result->status_code");
+            $this->logging->writeLog('VeeamPlugin', "HTTP Error: $Result->status_code", "warning");
             return false;
-        } else {
-            return $Result;    
         }
+        return $Result;
     }
-    private function refreshAuth() {
-        // Refresh authentication logic here
-        // For now, just reset the access token
-        $this->accessToken = null;
-        $this->tokenExpiration = null;
+    
+    private function executeApiRequest($Method, $VeeamURL, $Data, $headers) {
+        try {
+            if (in_array($Method, ["GET", "get"])) {
+                return $this->api->query->$Method($VeeamURL, $headers);
+            } else {
+                return $this->api->query->$Method($VeeamURL, $Data, $headers);
+            }
+        } catch (Exception $e) {
+            $this->logging->writeLog('VeeamPlugin', "API request failed: " . $e->getMessage(), 'error');
+            $this->api->setAPIResponse('Error', 'API request failed');
+            return false;
+        }
     }
 
-        //// Everything after this line (204) is features and is permitted to be edited to build out the plugin features
+    // Function to decrypt the password and build out a valid token for Veeam Plugin
+    private function getAccessToken($force = false) {
+        $Username = $this->pluginConfig['Veeam-Username'] ?? null;
+        $Password = $this->pluginConfig['Veeam-Password'] ?? null;
+        $Token = $this->pluginConfig['Veeam-Token'] ?? null;
+        // Check if we have a valid token
+        if (!$force && $Token['accessToken'] && isset($Token['expires']) && time() < $Token['expires']) {
+            return $Token['accessToken'];
+        } else {
+            try {
+                if (!isset($Username) || !isset($Password)) {
+                    throw new Exception("Veeam credentials not configured. Please set 'Veeam-Username' and 'Veeam-Password' in config.json");
+                }
+                try {
+                    $PasswordDecrypted = decrypt($Password,$this->config->get('Security','salt'));
+                } catch (Exception $e) {
+                    $this->api->setAPIResponse('Error','Unable to decrypt Veeam Password');
+                    $this->logging->writeLog('VeeamPlugin','Unable to decrypt Veeam Password','error');
+                    return false;
+                }
+    
+                $postData = [
+                    'grant_type' => 'password',
+                    'username' => $Username,
+                    'password' => $PasswordDecrypted
+                ];
+    
+                $headers = [
+                    'Content-Type' => 'application/x-www-form-urlencoded',
+                    'Accept' => 'application/json',
+                    'x-api-version' => '1.2-rev0'
+                ];
+    
+                $baseUrl = $this->getVeeamUrl();
+                $url = $baseUrl . '/api/oauth2/token';
+                $Result = $this->api->query->post($url,$postData,$headers);
+                            
+                if ($error) {
+                    throw new Exception("Failed to get access token: " . $error);
+                }
+                
+                if ($httpCode >= 400) {
+                    throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result);
+                }
+    
+                if (!isset($Result['access_token'])) {
+                    throw new Exception("Invalid token response: " . $Result);
+                }            
+                
+                $tokenResult = array(
+                    'accessToken' => $Result['access_token'],
+                    'expires' => time() + ($Result['.expires'] ?? 3600)
+                );
+
+                $config = $this->config->get();
+                $data = [
+                    "Veeam-Token" => $tokenResult
+                ];
+                $this->config->setPlugin($config, $data, 'VeeamPlugin');
+                
+                return $tokenResult['accessToken'];
+                
+            } catch (Exception $e) {
+                error_log("Error getting access token: " . $e->getMessage());
+                throw $e;
+            }
+        }
+    }
+    
+    // ** 
+    // Everything after this line (204) is features and is permitted to be edited to build out the plugin features
+    // **
 
     public function GetSessions() {
         try {
@@ -210,9 +217,13 @@ class VeeamPlugin extends ib {
             }
 
             $sessions = $this->makeApiRequest("GET", "v1/sessions");
-            $this->api->setAPIResponse('Success', 'Sessions retrieved');
-            $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
-            return true;
+            if (!empty($sessions)) {
+                $this->api->setAPIResponse('Success', 'Sessions retrieved');
+                $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
+                return true;
+            } else {
+                return false;
+            }
         } catch (Exception $e) {
             $this->api->setAPIResponse('Error', $e->getMessage());
             return false;
@@ -238,11 +249,10 @@ class VeeamPlugin extends ib {
             return false;
         }
     }
-
     
-    public function GetSessionWithID($sessionid) {
+    public function GetTaskSessionsFromSessionID($sessionID) {
         try {
-            $result = $this->makeApiRequest("GET", "v1/sessions?sessionIdFilter=" . $sessionid);
+            $result = $this->makeApiRequest("GET", "v1/taskSessions?sessionIdFilter=" . $sessionID);
             error_log("Session API Result Type: " . gettype($result));
             error_log("Session API Raw Result: " . print_r($result, true));
             

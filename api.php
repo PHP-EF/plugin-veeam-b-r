@@ -18,7 +18,7 @@ $app->get('/plugin/VeeamPlugin/settings', function ($request, $response, $args) 
 // Get Veeam License Report
 $app->get('/plugin/VeeamPlugin/licenseinstances', function ($request, $response, $args) {
     $VeeamPlugin = new VeeamPlugin();
-    $VeeamPlugin->GetLicenseCreateReport();
+    $VeeamPlugin->GetLicenseInstances();
     $response->getBody()->write(jsonE($GLOBALS['api']));
     return $response
         ->withHeader('Content-Type', 'application/json;charset=UTF-8')

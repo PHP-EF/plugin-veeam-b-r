@@ -58,7 +58,7 @@ function getStatusClass(status) {
 }
 
 function buildTaskSessionTable(sessionId) {
-    $.getJSON("/api/plugin/VeeamPlugin/sessions/"+sessionId+"/taskSessions", function(data) {
+    queryAPI("GET","/api/plugin/VeeamPlugin/sessions/"+sessionId+"/taskSessions").done(function(data) {
         if (data["result"] == "Success") {
             var tableData = data.data.data;
             $("#taskSessionTable").bootstrapTable("destroy");

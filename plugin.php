@@ -173,22 +173,24 @@ class VeeamPlugin extends phpef {
                 $baseUrl = $this->getVeeamUrl();
                 $url = $baseUrl . '/api/oauth2/token';
                 $Result = $this->api->query->post($url,$postData,$headers);
-                            
-                if ($error) {
-                    throw new Exception("Failed to get access token: " . $error);
-                }
+                
+                // Get the response status code
+                $httpCode = $Result->status_code;
+                
+                // Decode the response body
+                $responseData = json_decode($Result->body, true);
                 
                 if ($httpCode >= 400) {
-                    throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result);
+                    throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result->body);
                 }
-    
-                if (!isset($Result['access_token'])) {
-                    throw new Exception("Invalid token response: " . $Result);
+
+                if (!isset($responseData['access_token'])) {
+                    throw new Exception("Invalid token response: " . $Result->body);
                 }            
-                
+            
                 $tokenResult = array(
-                    'accessToken' => $Result['access_token'],
-                    'expires' => time() + ($Result['.expires'] ?? 3600)
+                    'accessToken' => $responseData['access_token'],
+                    'expires' => time() + ($responseData['.expires'] ?? 3600)
                 );
 
                 $config = $this->config->get();

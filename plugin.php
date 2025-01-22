@@ -251,8 +251,9 @@ class VeeamPlugin extends phpef {
                 }
             }
 
+            // Set the response data directly without wrapping it
             $this->api->setAPIResponse('Success', 'Sessions retrieved');
-            $this->api->setAPIResponseData(['data' => $formattedData]);
+            $this->api->setAPIResponseData($formattedData);
             return true;
         } catch (Exception $e) {
             $this->api->setAPIResponse('Error', $e->getMessage());

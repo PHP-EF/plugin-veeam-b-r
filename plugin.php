@@ -78,25 +78,28 @@ class VeeamPlugin extends phpef {
             $this->api->setAPIResponse('Error', 'Veeam URL Missing');
             return false;
         }
-    
+
         $VeeamToken = $this->getAccessToken();
         if (empty($VeeamToken)) {
             error_log("Veeam API Token Missing");
             $this->api->setAPIResponse('Error', 'Veeam API Key Missing');
             return false;
         }
-    
+
         $headers = [
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $VeeamToken,
-            'Content-Type' => 'application/x-www-form-urlencoded',
-            'x-api-version' => '1.2-rev0'
+            'Content-Type' => 'application/json',
+            'x-api-version' => '1.1-rev0'
         ];
-    
+
         $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
-    
         $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
-    
+
+        if (!$Result) {
+            return false;
+        }
+
         if (isset($Result->status_code) && $Result->status_code == 401) {
             $this->logging->writeLog('VeeamPlugin', "Token invalid or expired, attempting refresh..", "info");
             try {
@@ -104,22 +107,29 @@ class VeeamPlugin extends phpef {
                 if (!$VeeamToken) {
                     $this->logging->writeLog('VeeamPlugin', "Failed to refresh API token..", "error");
                     return false;
-                } else {
-                    $this->logging->writeLog('VeeamPlugin', "Successfully refreshed API token", "info");
                 }
+                $this->logging->writeLog('VeeamPlugin', "Successfully refreshed API token", "info");
                 $headers['Authorization'] = 'Bearer ' . $VeeamToken;
                 $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
-                return $Result;
             } catch (Exception $e) {
                 $this->logging->writeLog('VeeamPlugin', "Error refreshing access token: " . $e->getMessage(), 'error');
                 throw $e;
             }
         }
+
         if (isset($Result->status_code) && $Result->status_code != 200) {
-            $this->api->setAPIResponse('Error', "HTTP Error: $Result->status_code");
-            $this->logging->writeLog('VeeamPlugin', "HTTP Error: $Result->status_code", "warning");
+            $errorMessage = "HTTP Error: " . $Result->status_code;
+            if (!empty($Result->body)) {
+                $errorBody = json_decode($Result->body, true);
+                if ($errorBody && isset($errorBody['message'])) {
+                    $errorMessage .= " - " . $errorBody['message'];
+                }
+            }
+            $this->api->setAPIResponse('Error', $errorMessage);
+            $this->logging->writeLog('VeeamPlugin', $errorMessage, "warning");
             return false;
         }
+
         return $Result;
     }
     
@@ -212,14 +222,17 @@ class VeeamPlugin extends phpef {
 
     public function GetSessions() {
         try {
-            $sessions = $this->makeApiRequest("GET", "v1/sessions");
-            if (!empty($sessions)) {
-                $this->api->setAPIResponse('Success', 'Sessions retrieved');
-                $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
-                return true;
-            } else {
-                return false;
+            $response = $this->makeApiRequest("GET", "v1/sessions");
+            if (!empty($response)) {
+                $responseData = json_decode($response->body, true);
+                if (isset($responseData['data'])) {
+                    $this->api->setAPIResponse('Success', 'Sessions retrieved');
+                    $this->api->setAPIResponseData($responseData['data']);
+                    return true;
+                }
             }
+            $this->api->setAPIResponse('Error', 'No sessions data found');
+            return false;
         } catch (Exception $e) {
             $this->api->setAPIResponse('Error', $e->getMessage());
             return false;

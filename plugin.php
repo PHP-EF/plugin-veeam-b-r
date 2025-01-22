@@ -90,7 +90,7 @@ class VeeamPlugin extends phpef {
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $VeeamToken,
             'Content-Type' => 'application/x-www-form-urlencoded',
-            'x-api-version' => '1.2-rev0'
+            'x-api-version' => '1.1-rev2'
         ];
     
         $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;

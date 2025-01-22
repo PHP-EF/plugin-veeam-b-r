@@ -90,7 +90,7 @@ class VeeamPlugin extends phpef {
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $VeeamToken,
             'Content-Type' => 'application/x-www-form-urlencoded',
-            'x-api-version' => '1.1-rev0'
+            'x-api-version' => '1.2-rev0'
         ];
     
         $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
@@ -157,7 +157,10 @@ class VeeamPlugin extends phpef {
                     $this->logging->writeLog('VeeamPlugin','Unable to decrypt Veeam Password','error');
                     return false;
                 }
+                print_r($PasswordDecrypted);
     
+                $error = null;
+                $httpCode = null;
                 $postData = [
                     'grant_type' => 'password',
                     'username' => $Username,

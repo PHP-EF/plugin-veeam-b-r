@@ -90,7 +90,7 @@ class VeeamPlugin extends phpef {
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $VeeamToken,
             'Content-Type' => 'application/x-www-form-urlencoded',
-            'x-api-version' => '1.1-rev0'
+            'x-api-version' => '1.2-rev0'
         ];
     
         $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
@@ -167,36 +167,35 @@ class VeeamPlugin extends phpef {
                 $headers = [
                     'Content-Type' => 'application/x-www-form-urlencoded',
                     'Accept' => 'application/json',
-                    'x-api-version' => '1.2-rev0'
+                    'x-api-version' => '1.1-rev0'
                 ];
     
                 $baseUrl = $this->getVeeamUrl();
                 $url = $baseUrl . '/api/oauth2/token';
                 $Result = $this->api->query->post($url,$postData,$headers);
                 
-                // Get the response status code
-                $httpCode = $Result->status_code;
-                
-                // Decode the response body
-                $responseData = json_decode($Result->body, true);
+                if ($error) {
+                    throw new Exception("Failed to get access token: " . $error);
+                }
                 
                 if ($httpCode >= 400) {
-                    throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result->body);
+                    throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result);
                 }
 
-                if (!isset($responseData['access_token'])) {
-                    throw new Exception("Invalid token response: " . $Result->body);
+                if (!isset($Result['access_token'])) {
+                    throw new Exception("Invalid token response: " . $Result);
                 }            
             
                 $tokenResult = array(
-                    'accessToken' => $responseData['access_token'],
-                    'expires' => time() + ($responseData['.expires'] ?? 3600)
+                    'accessToken' => $Result['access_token'],
+                    'expires' => time() + ($Result['.expires'] ?? 3600)
                 );
 
+                $config = $this->config->get();
                 $data = [
                     "Veeam-Token" => $tokenResult
                 ];
-                $this->config->setPlugin($data, 'VeeamPlugin');
+                $this->config->setPlugin($config, $data, 'VeeamPlugin');
                 
                 return $tokenResult['accessToken'];
                 

@@ -223,16 +223,37 @@ class VeeamPlugin extends phpef {
     public function GetSessions() {
         try {
             $response = $this->makeApiRequest("GET", "v1/sessions");
-            if (!empty($response)) {
-                $responseData = json_decode($response->body, true);
-                if (isset($responseData['data'])) {
-                    $this->api->setAPIResponse('Success', 'Sessions retrieved');
-                    $this->api->setAPIResponseData($responseData['data']);
-                    return true;
+            if (!$response) {
+                $this->api->setAPIResponse('Error', 'Failed to retrieve sessions');
+                return false;
+            }
+
+            $responseData = json_decode($response->body, true);
+            if (!$responseData) {
+                $this->api->setAPIResponse('Error', 'Invalid response format');
+                return false;
+            }
+
+            // Format the response data for the table
+            $formattedData = [];
+            if (isset($responseData['results'])) {
+                foreach ($responseData['results'] as $session) {
+                    $formattedData[] = [
+                        'name' => $session['jobName'] ?? '',
+                        'creationTime' => $session['creationTime'] ?? '',
+                        'endTime' => $session['endTime'] ?? '',
+                        'result' => [
+                            'message' => $session['result'] ?? '',
+                            'result' => $session['status'] ?? ''
+                        ],
+                        'progressPercent' => $session['progress'] ?? 0
+                    ];
                 }
             }
-            $this->api->setAPIResponse('Error', 'No sessions data found');
-            return false;
+
+            $this->api->setAPIResponse('Success', 'Sessions retrieved');
+            $this->api->setAPIResponseData(['data' => $formattedData]);
+            return true;
         } catch (Exception $e) {
             $this->api->setAPIResponse('Error', $e->getMessage());
             return false;

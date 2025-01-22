@@ -193,11 +193,10 @@ class VeeamPlugin extends phpef {
                     'expires' => time() + ($responseData['.expires'] ?? 3600)
                 );
 
-                $config = $this->config->get();
                 $data = [
                     "Veeam-Token" => $tokenResult
                 ];
-                $this->config->setPlugin($config, $data, 'VeeamPlugin');
+                $this->config->setPlugin($data, 'VeeamPlugin');
                 
                 return $tokenResult['accessToken'];
                 

@@ -78,28 +78,25 @@ class VeeamPlugin extends phpef {
             $this->api->setAPIResponse('Error', 'Veeam URL Missing');
             return false;
         }
-
+    
         $VeeamToken = $this->getAccessToken();
         if (empty($VeeamToken)) {
             error_log("Veeam API Token Missing");
             $this->api->setAPIResponse('Error', 'Veeam API Key Missing');
             return false;
         }
-
+    
         $headers = [
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $VeeamToken,
-            'Content-Type' => 'application/json',
+            'Content-Type' => 'application/x-www-form-urlencoded',
             'x-api-version' => '1.1-rev0'
         ];
-
+    
         $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
+    
         $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
-
-        if (!$Result) {
-            return false;
-        }
-
+    
         if (isset($Result->status_code) && $Result->status_code == 401) {
             $this->logging->writeLog('VeeamPlugin', "Token invalid or expired, attempting refresh..", "info");
             try {
@@ -107,29 +104,22 @@ class VeeamPlugin extends phpef {
                 if (!$VeeamToken) {
                     $this->logging->writeLog('VeeamPlugin', "Failed to refresh API token..", "error");
                     return false;
+                } else {
+                    $this->logging->writeLog('VeeamPlugin', "Successfully refreshed API token", "info");
                 }
-                $this->logging->writeLog('VeeamPlugin', "Successfully refreshed API token", "info");
                 $headers['Authorization'] = 'Bearer ' . $VeeamToken;
                 $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
+                return $Result;
             } catch (Exception $e) {
                 $this->logging->writeLog('VeeamPlugin', "Error refreshing access token: " . $e->getMessage(), 'error');
                 throw $e;
             }
         }
-
         if (isset($Result->status_code) && $Result->status_code != 200) {
-            $errorMessage = "HTTP Error: " . $Result->status_code;
-            if (!empty($Result->body)) {
-                $errorBody = json_decode($Result->body, true);
-                if ($errorBody && isset($errorBody['message'])) {
-                    $errorMessage .= " - " . $errorBody['message'];
-                }
-            }
-            $this->api->setAPIResponse('Error', $errorMessage);
-            $this->logging->writeLog('VeeamPlugin', $errorMessage, "warning");
+            $this->api->setAPIResponse('Error', "HTTP Error: $Result->status_code");
+            $this->logging->writeLog('VeeamPlugin', "HTTP Error: $Result->status_code", "warning");
             return false;
         }
-
         return $Result;
     }
     
@@ -177,13 +167,13 @@ class VeeamPlugin extends phpef {
                 $headers = [
                     'Content-Type' => 'application/x-www-form-urlencoded',
                     'Accept' => 'application/json',
-                    'x-api-version' => '1.1-rev0'
+                    'x-api-version' => '1.2-rev0'
                 ];
     
                 $baseUrl = $this->getVeeamUrl();
                 $url = $baseUrl . '/api/oauth2/token';
                 $Result = $this->api->query->post($url,$postData,$headers);
-                
+                            
                 if ($error) {
                     throw new Exception("Failed to get access token: " . $error);
                 }
@@ -191,21 +181,20 @@ class VeeamPlugin extends phpef {
                 if ($httpCode >= 400) {
                     throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result);
                 }
-
+    
                 if (!isset($Result['access_token'])) {
                     throw new Exception("Invalid token response: " . $Result);
                 }            
-            
+                
                 $tokenResult = array(
                     'accessToken' => $Result['access_token'],
                     'expires' => time() + ($Result['.expires'] ?? 3600)
                 );
 
-                $config = $this->config->get();
                 $data = [
                     "Veeam-Token" => $tokenResult
                 ];
-                $this->config->setPlugin($config, $data, 'VeeamPlugin');
+                $this->config->setPlugin($data, 'VeeamPlugin');
                 
                 return $tokenResult['accessToken'];
                 
@@ -222,39 +211,14 @@ class VeeamPlugin extends phpef {
 
     public function GetSessions() {
         try {
-            $response = $this->makeApiRequest("GET", "v1/sessions");
-            if (!$response) {
-                $this->api->setAPIResponse('Error', 'Failed to retrieve sessions');
+            $sessions = $this->makeApiRequest("GET", "v1/sessions");
+            if (!empty($sessions)) {
+                $this->api->setAPIResponse('Success', 'Sessions retrieved');
+                $this->api->setAPIResponseData($sessions['data']); // Just pass the data array directly
+                return true;
+            } else {
                 return false;
             }
-
-            $responseData = json_decode($response->body, true);
-            if (!$responseData) {
-                $this->api->setAPIResponse('Error', 'Invalid response format');
-                return false;
-            }
-
-            // Format the response data for the table
-            $formattedData = [];
-            if (isset($responseData['results'])) {
-                foreach ($responseData['results'] as $session) {
-                    $formattedData[] = [
-                        'name' => $session['jobName'] ?? '',
-                        'creationTime' => $session['creationTime'] ?? '',
-                        'endTime' => $session['endTime'] ?? '',
-                        'result' => [
-                            'message' => $session['result'] ?? '',
-                            'result' => $session['status'] ?? ''
-                        ],
-                        'progressPercent' => $session['progress'] ?? 0
-                    ];
-                }
-            }
-
-            // Set the response data directly without wrapping it
-            $this->api->setAPIResponse('Success', 'Sessions retrieved');
-            $this->api->setAPIResponseData($formattedData);
-            return true;
         } catch (Exception $e) {
             $this->api->setAPIResponse('Error', $e->getMessage());
             return false;

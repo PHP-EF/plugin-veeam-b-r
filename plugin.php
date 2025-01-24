@@ -97,7 +97,7 @@ class VeeamPlugin extends phpef {
         $VeeamToken = $this->getAccessToken();
         if (empty($VeeamToken)) {
             error_log("Veeam API Token Missing");
-            $this->api->setAPIResponse('Error', 'Veeam API Key Missing');
+            $this->api->setAPIResponse('Error', 'Veeam Token Missing');
             return false;
         }
 
@@ -201,7 +201,7 @@ class VeeamPlugin extends phpef {
                 $baseUrl = $this->getVeeamUrl();
                 $url = $baseUrl . '/api/oauth2/token';
                 $Result = $this->api->query->post($url,$postData,$headers);
-
+                print_r($Result);
                 if ($error) {
                     throw new Exception("Failed to get access token: " . $error);
                 }

@@ -64,7 +64,7 @@ class VeeamPlugin extends phpef {
             )
         );
     }
-    
+
     // Function to define the api and build the required api for the plugin
     private function getApiEndpoint($path) {
         $baseUrl = $this->getVeeamUrl();
@@ -93,7 +93,7 @@ class VeeamPlugin extends phpef {
             $this->api->setAPIResponse('Error', 'Veeam URL Missing');
             return false;
         }
-    
+
         $VeeamToken = $this->getAccessToken();
         if (empty($VeeamToken)) {
             error_log("Veeam API Token Missing");
@@ -106,18 +106,18 @@ class VeeamPlugin extends phpef {
             $this->api->setAPIResponse('Error', 'Veeam API Version Missing');
             return false;
         }
-    
+
         $headers = [
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $VeeamToken,
             'Content-Type' => 'application/x-www-form-urlencoded',
             'x-api-version' => $this->pluginConfig['API-Version']
         ];
-    
+
         $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
-    
+
         $Result = $this->executeApiRequest($Method, $VeeamURL, $Data, $headers);
-    
+
         if (isset($Result->status_code) && $Result->status_code == 401) {
             $this->logging->writeLog('VeeamPlugin', "Token invalid or expired, attempting refresh..", "info");
             try {
@@ -143,7 +143,7 @@ class VeeamPlugin extends phpef {
         }
         return $Result;
     }
-    
+
     private function executeApiRequest($Method, $VeeamURL, $Data, $headers) {
         try {
             if (in_array($Method, ["GET", "get"])) {
@@ -185,35 +185,35 @@ class VeeamPlugin extends phpef {
                     $this->api->setAPIResponse('Error', 'Veeam API Version Missing');
                     return false;
                 }
-    
+
                 $postData = [
                     'grant_type' => 'password',
                     'username' => $Username,
                     'password' => $PasswordDecrypted
                 ];
-    
+
                 $headers = [
                     'Content-Type' => 'application/x-www-form-urlencoded',
                     'Accept' => 'application/json',
                     'x-api-version' => $this->pluginConfig['API-Version']
                 ];
-    
+
                 $baseUrl = $this->getVeeamUrl();
                 $url = $baseUrl . '/api/oauth2/token';
                 $Result = $this->api->query->post($url,$postData,$headers);
-                            
+
                 if ($error) {
                     throw new Exception("Failed to get access token: " . $error);
                 }
-                
+
                 if ($httpCode >= 400) {
                     throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result);
                 }
-                
+
                 if (!is_array($Result) || !isset($Result['access_token'])) {
                     throw new Exception("Invalid token response: " . $Result);
-                }           
-                
+                }
+
                 $tokenResult = array(
                     'accessToken' => $Result['access_token'],
                     'expires' => time() + ($Result['.expires'] ?? 3600)
@@ -223,17 +223,17 @@ class VeeamPlugin extends phpef {
                     "Veeam-Token" => $tokenResult
                 ];
                 $this->config->setPlugin($data, 'VeeamPlugin');
-                
+
                 return $tokenResult['accessToken'];
-                
+
             } catch (Exception $e) {
                 error_log("Error getting access token: " . $e->getMessage());
                 throw $e;
             }
         }
     }
-    
-    // ** 
+
+    // **
     // Everything after this line (204) is features and is permitted to be edited to build out the plugin features
     // **
 
@@ -258,11 +258,11 @@ class VeeamPlugin extends phpef {
             $result = $this->makeApiRequest("GET", "v1/license/instances");
             error_log("License API Result Type: " . gettype($result));
             error_log("License API Raw Result: " . print_r($result, true));
-            
+
             if ($result === false) {
                 throw new Exception("API call returned false");
             }
-            
+
             $this->api->setAPIResponse('Success', 'License report retrieved');
             $this->api->setAPIResponseData($result);
             return true;
@@ -272,17 +272,36 @@ class VeeamPlugin extends phpef {
             return false;
         }
     }
-    
+    public function GetBackupInfrastructureStates() {
+        try {
+            $result = $this->makeApiRequest("GET", "v1/backupInfrastructure/repositories/states");
+            error_log("Backup Infrastructure API Result Type: " . gettype($result));
+            error_log("Backup Infrastructure API Raw Result: " . print_r($result, true));
+
+            if ($result === false) {
+                throw new Exception("API call returned false");
+            }
+
+            $this->api->setAPIResponse('Success', 'Backup Infrastructure states retrieved');
+            $this->api->setAPIResponseData($result);
+            return true;
+        } catch (Exception $e) {
+            error_log("Backup Infrastructure API Error: " . $e->getMessage());
+            $this->api->setAPIResponse('Error', $e->getMessage());
+            return false;
+        }
+    }
+
     public function GetTaskSessionsFromSessionID($sessionID) {
         try {
             $result = $this->makeApiRequest("GET", "v1/taskSessions?sessionIdFilter=" . $sessionID);
             error_log("Session API Result Type: " . gettype($result));
             error_log("Session API Raw Result: " . print_r($result, true));
-            
+
             if ($result === false) {
                 throw new Exception("API call returned false");
             }
-            
+
             $this->api->setAPIResponse('Success', 'Session retrieved');
             $this->api->setAPIResponseData($result);
             return true;

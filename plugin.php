@@ -38,6 +38,21 @@ class VeeamPlugin extends phpef {
                     'label' => 'VEEAM Enterprise Manager URL',
                     'description' => 'The URL of your VEEAM Enterprise Manager (e.g., https://veeamserver:9419). Uses port 9419 for HTTPS.'
                 ]),
+                $this->settingsOption('select', 'API-Version', [
+                    'label' => 'VEEAM Enterprise Manager API Version',
+                    'value' => '1.2-rev0',
+                    'options' => array(
+                        array(
+                            'name' => '12.3.0.310',
+                            'value' => '1.2-rev0'
+                        ),
+                        array(
+                            'name' => '12.2.0.334',
+                            'value' => '1.1-rev2'
+                        ),
+                    ),
+                    'description' => 'The API version to use for Veeam Enterprise Manager'
+                ]),
                 $this->settingsOption('input', 'Veeam-Username', [
                     'label' => 'VEEAM Enterprise Manager Username',
                     'description' => 'Username with permissions to access Veeam Enterprise Manager'
@@ -85,12 +100,18 @@ class VeeamPlugin extends phpef {
             $this->api->setAPIResponse('Error', 'Veeam API Key Missing');
             return false;
         }
+
+        if (empty($this->pluginConfig['API-Version'])) {
+            error_log("Veeam API Version Missing");
+            $this->api->setAPIResponse('Error', 'Veeam API Version Missing');
+            return false;
+        }
     
         $headers = [
             'Accept' => 'application/json',
             'Authorization' => 'Bearer ' . $VeeamToken,
             'Content-Type' => 'application/x-www-form-urlencoded',
-            'x-api-version' => '1.2-rev0'
+            'x-api-version' => $this->pluginConfig['API-Version']
         ];
     
         $VeeamURL = $this->pluginConfig['Veeam-URL'] . '/api/' . $Uri;
@@ -142,6 +163,7 @@ class VeeamPlugin extends phpef {
         $Username = $this->pluginConfig['Veeam-Username'] ?? null;
         $Password = $this->pluginConfig['Veeam-Password'] ?? null;
         $Token = $this->pluginConfig['Veeam-Token'] ?? null;
+
         // Check if we have a valid token
         if (!$force && $Token['accessToken'] && isset($Token['expires']) && time() < $Token['expires']) {
             return $Token['accessToken'];
@@ -157,6 +179,12 @@ class VeeamPlugin extends phpef {
                     $this->logging->writeLog('VeeamPlugin','Unable to decrypt Veeam Password','error');
                     return false;
                 }
+
+                if (empty($this->pluginConfig['API-Version'])) {
+                    error_log("Veeam API Version Missing");
+                    $this->api->setAPIResponse('Error', 'Veeam API Version Missing');
+                    return false;
+                }
     
                 $postData = [
                     'grant_type' => 'password',
@@ -167,7 +195,7 @@ class VeeamPlugin extends phpef {
                 $headers = [
                     'Content-Type' => 'application/x-www-form-urlencoded',
                     'Accept' => 'application/json',
-                    'x-api-version' => '1.2-rev0'
+                    'x-api-version' => $this->pluginConfig['API-Version']
                 ];
     
                 $baseUrl = $this->getVeeamUrl();
@@ -182,10 +210,9 @@ class VeeamPlugin extends phpef {
                     throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result);
                 }
                 
-                print_r($Result);
-                if (!isset($Result['access_token'])) {
+                if (!is_array($Result) || !isset($Result['access_token'])) {
                     throw new Exception("Invalid token response: " . $Result);
-                }            
+                }           
                 
                 $tokenResult = array(
                     'accessToken' => $Result['access_token'],

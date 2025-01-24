@@ -40,7 +40,7 @@ class VeeamPlugin extends phpef {
                 ]),
                 $this->settingsOption('select', 'API-Version', [
                     'label' => 'VEEAM Enterprise Manager API Version',
-                    'value' => '1.2-rev0',
+                    'value' => '',
                     'options' => array(
                         array(
                             'name' => '12.3.0.310',
@@ -201,7 +201,6 @@ class VeeamPlugin extends phpef {
                 $baseUrl = $this->getVeeamUrl();
                 $url = $baseUrl . '/api/oauth2/token';
                 $Result = $this->api->query->post($url,$postData,$headers);
-                print_r($Result);
                 if ($error) {
                     throw new Exception("Failed to get access token: " . $error);
                 }

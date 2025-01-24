@@ -181,7 +181,8 @@ class VeeamPlugin extends phpef {
                 if ($httpCode >= 400) {
                     throw new Exception("Failed to get access token. HTTP Code: " . $httpCode . " Response: " . $Result);
                 }
-    
+                
+                print_r($Result);
                 if (!isset($Result['access_token'])) {
                     throw new Exception("Invalid token response: " . $Result);
                 }            

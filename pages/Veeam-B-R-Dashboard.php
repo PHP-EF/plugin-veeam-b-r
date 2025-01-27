@@ -184,34 +184,22 @@ return '
                             </label>
                             <span>Show System Jobs</span>
                         </div>
-                        <div class="input-group" style="width: 250px;">
-                            <input type="text" class="form-control" placeholder="Search">
-                            <div class="input-group-append">
-                                <button class="btn btn-default" type="button">
-                                    <i class="fas fa-search"></i>
-                                </button>
-                            </div>
-                        </div>
                     </div>
                 </div>
                 <div class="card-body">
-                    <table data-url="/api/plugin/VeeamPlugin/sessions"
-                        data-data-field="data"
-                        data-toggle="table"
-                        data-search="true"
-                        data-filter-control="true"
-                        data-show-filter-control-switch="true"
-                        data-filter-control-visible="false"
-                        data-show-refresh="true"
-                        data-pagination="true"
-                        data-toolbar="#toolbar"
-                        data-sort-name="Name"
-                        data-sort-order="asc"
-                        data-show-columns="true"
-                        data-page-size="25"
-                        // data-buttons="rbacGroupsButtons"
-                        // data-buttons-order="btnAddGroup,refresh"
-                        class="table table-striped" id="VeeamPluginSessionTable">
+                    <table id="sessionsTable" 
+                           data-url="/api/plugin/VeeamPlugin/sessions"
+                           data-toggle="table"
+                           data-pagination="true"
+                           data-search="true"
+                           data-show-refresh="true"
+                           data-show-toggle="true"
+                           data-show-columns="true"
+                           data-show-export="true"
+                           data-minimum-count-columns="2"
+                           data-show-pagination-switch="true"
+                           data-page-list="[10, 25, 50, 100, ALL]"
+                           data-show-footer="false">
                         <thead>
                         <tr>
                             <th data-field="state" data-checkbox="true"></th>
@@ -270,30 +258,51 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Function to mark system jobs
     function markSystemJobs() {
-        const rows = document.querySelectorAll("table tr");
+        const table = document.getElementById("sessionsTable");
+        if (!table) return;
+        
+        const rows = table.querySelectorAll("tbody tr");
         rows.forEach((row) => {
-            const jobNameCell = row.querySelector("td:first-child");
+            const jobNameCell = row.querySelector("td:nth-child(2)"); // Adjust based on Job Name column position
             if (jobNameCell && systemJobs.includes(jobNameCell.textContent.trim())) {
                 row.classList.add("system-job");
             }
         });
     }
     
+    // Function to handle table load event
+    function onTableLoad() {
+        markSystemJobs();
+        // Apply current toggle state
+        const toggle = document.getElementById("systemJobToggle");
+        if (toggle && !toggle.checked) {
+            const systemJobRows = document.querySelectorAll(".system-job");
+            systemJobRows.forEach((row) => row.classList.add("hidden"));
+        }
+    }
+    
     // Toggle system jobs visibility
     const toggle = document.getElementById("systemJobToggle");
-    toggle.addEventListener("change", function() {
-        const systemJobRows = document.querySelectorAll(".system-job");
-        systemJobRows.forEach((row) => {
-            if (this.checked) {
-                row.classList.remove("hidden");
-            } else {
-                row.classList.add("hidden");
-            }
+    if (toggle) {
+        toggle.addEventListener("change", function() {
+            const systemJobRows = document.querySelectorAll(".system-job");
+            systemJobRows.forEach((row) => {
+                if (this.checked) {
+                    row.classList.remove("hidden");
+                } else {
+                    row.classList.add("hidden");
+                }
+            });
         });
-    });
+    }
     
-    // Initialize system jobs marking
-    markSystemJobs();
+    // Initialize when table is loaded
+    const table = document.getElementById("sessionsTable");
+    if (table) {
+        table.addEventListener("load-success.bs.table", onTableLoad);
+        // Also run initial marking in case table is already loaded
+        onTableLoad();
+    }
 });
 </script>
 ';

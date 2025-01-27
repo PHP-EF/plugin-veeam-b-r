@@ -52,9 +52,58 @@ return '
         background-color: #ffc107 !important;
     }
 
-    .bg-warning h3,
     .bg-warning p {
         color: #000 !important;
+    }
+
+    /* Toggle switch styles */
+    .switch-container {
+        display: inline-flex;
+        align-items: center;
+        margin-right: 15px;
+    }
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+        margin-right: 8px;
+    }
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    input:checked + .slider {
+        background-color: #2196F3;
+    }
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+    .system-job.hidden {
+        display: none;
     }
 </style>
 
@@ -114,7 +163,16 @@ return '
         <div class="col-12">
             <div class="card">
                 <div class="card-header">
-                    <h3 class="card-title">Veeam Backup Sessions</h3>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title">Veeam Backup Sessions</h3>
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="systemJobToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Show System Jobs</span>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table data-url="/api/plugin/VeeamPlugin/sessions"
@@ -183,5 +241,30 @@ return '
             </div>
         </div>
     </div>
-</div>';
+</div>
+
+<script>
+$(document).ready(function() {
+    const systemJobs = ['Malware Detection', 'Configuration Database Resynchronize', 'Security & Compliance Analyzer'];
+    
+    function toggleSystemJobs(show) {
+        $('#VeeamPluginSessionTable tbody tr').each(function() {
+            const jobName = $(this).find('td:nth-child(2)').text().trim();
+            if (systemJobs.includes(jobName)) {
+                $(this).toggleClass('hidden', !show);
+            }
+        });
+    }
+
+    $('#systemJobToggle').on('change', function() {
+        toggleSystemJobs(this.checked);
+    });
+
+    // Handle both initial load and refresh
+    $('#VeeamPluginSessionTable').on('post-body.bs.table', function() {
+        toggleSystemJobs($('#systemJobToggle').prop('checked'));
+    });
+});
+</script>
+';
 ?>

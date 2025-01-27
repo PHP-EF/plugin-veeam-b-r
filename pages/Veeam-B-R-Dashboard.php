@@ -248,11 +248,10 @@ $(document).ready(function() {
     const systemJobs = [\'Malware Detection\', \'Configuration Database Resynchronize\', \'Security & Compliance Analyzer\'];
     
     function toggleSystemJobs(show) {
-        const $table = $(\'#VeeamPluginSessionTable\');
-        $table.bootstrapTable(\'filterBy\', {
-            name: function(value) {
-                const isSystemJob = systemJobs.includes(value);
-                return show ? true : !isSystemJob;
+        $(\'#VeeamPluginSessionTable tbody tr\').each(function() {
+            const jobName = $(this).find(\'td:nth-child(2)\').text().trim();
+            if (systemJobs.includes(jobName)) {
+                $(this).toggleClass(\'hidden\', !show);
             }
         });
     }
@@ -261,8 +260,10 @@ $(document).ready(function() {
         toggleSystemJobs(this.checked);
     });
 
-    // Apply initial state
-    toggleSystemJobs(true);
+    // Handle both initial load and refresh
+    $(\'#VeeamPluginSessionTable\').on(\'post-body.bs.table\', function() {
+        toggleSystemJobs($(\'#systemJobToggle\').prop(\'checked\'));
+    });
 });
 </script>
 ';

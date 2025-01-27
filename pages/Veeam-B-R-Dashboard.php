@@ -187,33 +187,35 @@ return '
                     </div>
                 </div>
                 <div class="card-body">
-                    <table id="sessionsTable" 
-                           data-url="/api/plugin/VeeamPlugin/sessions"
-                           data-toggle="table"
-                           data-pagination="true"
-                           data-search="true"
-                           data-show-refresh="true"
-                           data-show-toggle="true"
-                           data-show-columns="true"
-                           data-show-export="true"
-                           data-minimum-count-columns="2"
-                           data-show-pagination-switch="true"
-                           data-page-list="[10, 25, 50, 100, ALL]"
-                           data-show-footer="false">
+                    <table id="sessionsTable"
+                        data-url="/api/plugin/VeeamPlugin/sessions"
+                        data-data-field="data"
+                        data-toggle="table"
+                        data-search="true"
+                        data-filter-control="true"
+                        data-show-filter-control-switch="true"
+                        data-filter-control-visible="false"
+                        data-show-refresh="true"
+                        data-pagination="true"
+                        data-toolbar="#toolbar"
+                        data-sort-name="Name"
+                        data-sort-order="asc"
+                        data-show-columns="true"
+                        data-page-size="25"
+                        class="table table-striped">
                         <thead>
-                        <tr>
-                            <th data-field="state" data-checkbox="true"></th>
-                            <th data-field="name" data-sortable="true" data-filter-control="select">Job Name</th>
-                            <th data-field="creationTime" data-sortable="true" data-formatter="datetimeFormatter" data-filter-control="input">Start Time</th>
-                            <th data-field="endTime" data-sortable="true" data-formatter="datetimeFormatter" data-filter-control="input">End Time</th>
-                            <th data-field="result.message" data-sortable="true" data-visible="false" data-filter-control="input">Message</th>
-                            <th data-formatter="progressFormatter" data-field="progressPercent" data-sortable="true" data-filter-control="input">Progress</th>
-                            <th data-formatter="veeamResultFormatter" data-field="result.result" data-sortable="true" data-filter-control="select">Result</th>
-                            <th data-formatter="veeamCanceledFormatter" data-field="result.isCanceled" data-sortable="true" data-filter-control="select">Cancelled</th>
-                            <th data-formatter="veeamButtonFormatter" data-events="veeamButtonEvents">Actions</th>
-                        </tr>
+                            <tr>
+                                <th data-field="state" data-checkbox="true"></th>
+                                <th data-field="Name" data-sortable="true">Job Name</th>
+                                <th data-field="StartTime" data-sortable="true">Start Time</th>
+                                <th data-field="EndTime" data-sortable="true">End Time</th>
+                                <th data-field="Message">Message</th>
+                                <th data-field="Progress" data-formatter="progressFormatter">Progress</th>
+                                <th data-field="Result" data-formatter="resultFormatter">Result</th>
+                                <th data-field="Cancelled" data-formatter="cancelledFormatter">Cancelled</th>
+                                <th data-field="operate" data-formatter="operateFormatter" data-events="operateEvents">Actions</th>
+                            </tr>
                         </thead>
-                        <tbody id="veeamSessions"></tbody>
                     </table>
                 </div>
             </div>
@@ -263,7 +265,7 @@ document.addEventListener("DOMContentLoaded", function() {
         
         const rows = table.querySelectorAll("tbody tr");
         rows.forEach((row) => {
-            const jobNameCell = row.querySelector("td:nth-child(2)"); // Adjust based on Job Name column position
+            const jobNameCell = row.querySelector("td:nth-child(2)"); // Job Name is in second column
             if (jobNameCell && systemJobs.includes(jobNameCell.textContent.trim())) {
                 row.classList.add("system-job");
             }
@@ -272,7 +274,7 @@ document.addEventListener("DOMContentLoaded", function() {
     
     // Function to handle table load event
     function onTableLoad() {
-        markSystemJobs();
+        setTimeout(markSystemJobs, 100); // Small delay to ensure table is fully rendered
         // Apply current toggle state
         const toggle = document.getElementById("systemJobToggle");
         if (toggle && !toggle.checked) {
@@ -297,12 +299,9 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     
     // Initialize when table is loaded
-    const table = document.getElementById("sessionsTable");
-    if (table) {
-        table.addEventListener("load-success.bs.table", onTableLoad);
-        // Also run initial marking in case table is already loaded
-        onTableLoad();
-    }
+    const table = $("#sessionsTable");
+    table.on("load-success.bs.table", onTableLoad);
+    table.on("post-body.bs.table", onTableLoad); // Also handle when table body is updated
 });
 </script>
 ';

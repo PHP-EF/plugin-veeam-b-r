@@ -56,6 +56,67 @@ return '
     .bg-warning p {
         color: #000 !important;
     }
+    
+    /* Toggle switch styles */
+    .switch-container {
+        display: flex;
+        align-items: center;
+        margin-right: 15px;
+    }
+    
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+        margin-right: 8px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 24px;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+    }
+    
+    input:checked + .slider {
+        background-color: #2196F3;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+    
+    .system-job {
+        display: table-row;
+    }
+    
+    .system-job.hidden {
+        display: none;
+    }
 </style>
 
 <!-- License Summary Section -->
@@ -113,8 +174,25 @@ return '
     <div class="row">
         <div class="col-12">
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h3 class="card-title">Veeam Backup Sessions</h3>
+                    <div class="d-flex align-items-center">
+                        <div class="switch-container">
+                            <label class="switch">
+                                <input type="checkbox" id="systemJobToggle" checked>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Show System Jobs</span>
+                        </div>
+                        <div class="input-group" style="width: 250px;">
+                            <input type="text" class="form-control" placeholder="Search">
+                            <div class="input-group-append">
+                                <button class="btn btn-default" type="button">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="card-body">
                     <table data-url="/api/plugin/VeeamPlugin/sessions"
@@ -183,5 +261,40 @@ return '
             </div>
         </div>
     </div>
-</div>';
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Define system job types
+    const systemJobs = ["Malware Detection", "Configuration Database Resynchronize", "Security & Compliance Analyzer"];
+    
+    // Function to mark system jobs
+    function markSystemJobs() {
+        const rows = document.querySelectorAll("table tr");
+        rows.forEach((row) => {
+            const jobNameCell = row.querySelector("td:first-child");
+            if (jobNameCell && systemJobs.includes(jobNameCell.textContent.trim())) {
+                row.classList.add("system-job");
+            }
+        });
+    }
+    
+    // Toggle system jobs visibility
+    const toggle = document.getElementById("systemJobToggle");
+    toggle.addEventListener("change", function() {
+        const systemJobRows = document.querySelectorAll(".system-job");
+        systemJobRows.forEach((row) => {
+            if (this.checked) {
+                row.classList.remove("hidden");
+            } else {
+                row.classList.add("hidden");
+            }
+        });
+    });
+    
+    // Initialize system jobs marking
+    markSystemJobs();
+});
+</script>
+';
 ?>

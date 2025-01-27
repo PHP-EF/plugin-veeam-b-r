@@ -245,24 +245,24 @@ return '
 
 <script>
 $(document).ready(function() {
-    const systemJobs = ['Malware Detection', 'Configuration Database Resynchronize', 'Security & Compliance Analyzer'];
+    const systemJobs = [\'Malware Detection\', \'Configuration Database Resynchronize\', \'Security & Compliance Analyzer\'];
     
     function toggleSystemJobs(show) {
-        $('#VeeamPluginSessionTable tbody tr').each(function() {
-            const jobName = $(this).find('td:nth-child(2)').text().trim();
+        $(\'#VeeamPluginSessionTable tbody tr\').each(function() {
+            const jobName = $(this).find(\'td:nth-child(2)\').text().trim();
             if (systemJobs.includes(jobName)) {
-                $(this).toggleClass('hidden', !show);
+                $(this).toggleClass(\'hidden\', !show);
             }
         });
     }
 
-    $('#systemJobToggle').on('change', function() {
+    $(\'#systemJobToggle\').on(\'change\', function() {
         toggleSystemJobs(this.checked);
     });
 
     // Handle both initial load and refresh
-    $('#VeeamPluginSessionTable').on('post-body.bs.table', function() {
-        toggleSystemJobs($('#systemJobToggle').prop('checked'));
+    $(\'#VeeamPluginSessionTable\').on(\'post-body.bs.table\', function() {
+        toggleSystemJobs($(\'#systemJobToggle\').prop(\'checked\'));
     });
 });
 </script>

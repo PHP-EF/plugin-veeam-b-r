@@ -249,20 +249,20 @@ $(document).ready(function() {
     
     function toggleSystemJobs(show) {
         const $table = $(\'#VeeamPluginSessionTable\');
-        if (show) {
-            $table.bootstrapTable(\'filterBy\', {}, {\'filterAlgorithm\': \'and\'});
-        } else {
-            $table.bootstrapTable(\'filterBy\', {
-                name: function(value) {
-                    return !systemJobs.includes(value);
-                }
-            }, {\'filterAlgorithm\': \'and\'});
-        }
+        $table.bootstrapTable(\'filterBy\', {
+            name: function(value) {
+                const isSystemJob = systemJobs.includes(value);
+                return show ? true : !isSystemJob;
+            }
+        });
     }
 
     $(\'#systemJobToggle\').on(\'change\', function() {
         toggleSystemJobs(this.checked);
     });
+
+    // Apply initial state
+    toggleSystemJobs(true);
 });
 </script>
 ';

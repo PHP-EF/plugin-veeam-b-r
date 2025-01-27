@@ -142,7 +142,7 @@ return '
                         <div class="col-md-4">
                             <div class="small-box bg-warning">
                                 <div class="inner">
-                                    <h3 id="hostName" style="font-size: 1.2rem; word-break: break-all;">-</h3>
+                                    <h3 id="vcenterHost">-</h3>
                                     <p>vCenter Host</p>
                                 </div>
                                 <div class="icon">
@@ -245,25 +245,78 @@ return '
 
 <script>
 $(document).ready(function() {
-    const systemJobs = [\'Malware Detection\', \'Configuration Database Resynchronize\', \'Security & Compliance Analyzer\'];
+    const systemJobs = ["Malware Detection", "Configuration Database Resynchronize", "Security & Compliance Analyzer"];
     
     function toggleSystemJobs(show) {
-        $(\'#VeeamPluginSessionTable tbody tr\').each(function() {
-            const jobName = $(this).find(\'td:nth-child(2)\').text().trim();
-            if (systemJobs.includes(jobName)) {
-                $(this).toggleClass(\'hidden\', !show);
-            }
-        });
+        const $table = $("#VeeamPluginSessionTable");
+        
+        if (show) {
+            $table.bootstrapTable("clearFilterControl");
+            $table.bootstrapTable("refresh");
+        } else {
+            const data = $table.bootstrapTable("getData");
+            const filteredData = data.filter(function(row) {
+                if (!row.name) return true;
+                return !systemJobs.includes(row.name);
+            });
+            $table.bootstrapTable("load", filteredData);
+        }
     }
 
-    $(\'#systemJobToggle\').on(\'change\', function() {
+    $("#systemJobToggle").on("change", function() {
         toggleSystemJobs(this.checked);
     });
 
-    // Handle both initial load and refresh
-    $(\'#VeeamPluginSessionTable\').on(\'post-body.bs.table\', function() {
-        toggleSystemJobs($(\'#systemJobToggle\').prop(\'checked\'));
+    toggleSystemJobs(true);
+
+    $("#VeeamPluginSessionTable").on("load-success.bs.table", function(e, data) {
+        const columns = $(this).bootstrapTable("getOptions").columns[0];
     });
+
+    // Load license data
+    function loadLicenseData() {
+        // console.log(\'Loading license data...\');
+        queryAPI(\'GET\', \'/api/plugin/VeeamPlugin/licenseinstances\')
+            .then(function(response) {
+                if (response.result === \'Success\' && response.data && response.data.data) {
+                    const data = response.data.data;
+                    // console.log(\'License data:\', data);
+                    
+                    // Calculate totals
+                    const totalVMs = data.length;
+                    const totalInstances = data.reduce((sum, item) => sum + (parseInt(item.usedInstancesNumber) || 0), 0);
+                    const vcenterHost = data[0]?.hostName || \'N/A\';
+                    
+                    // console.log(\'Calculated values:\', {
+                    //     totalVMs,
+                    //     totalInstances,
+                    //     vcenterHost
+                    // });
+                    
+                    // Update the dashboard
+                    $(\'#totalVMsProtected\').text(totalVMs);
+                    $(\'#totalInstancesUsed\').text(totalInstances);
+                    $(\'#vcenterHost\').text(vcenterHost);
+                } else {
+                    console.error(\'Invalid license data response:\', response);
+                    $(\'#totalVMsProtected\').text(\'Error\');
+                    $(\'#totalInstancesUsed\').text(\'Error\');
+                    $(\'#vcenterHost\').text(\'Error\');
+                }
+            })
+            .catch(function(error) {
+                console.error(\'Error loading license data:\', error);
+                $(\'#totalVMsProtected\').text(\'Error\');
+                $(\'#totalInstancesUsed\').text(\'Error\');
+                $(\'#vcenterHost\').text(\'Error\');
+            });
+    }
+    
+    // Load initial data
+    loadLicenseData();
+    
+    // Refresh data every 5 minutes
+    setInterval(loadLicenseData, 5 * 60 * 1000);
 });
 </script>
 ';

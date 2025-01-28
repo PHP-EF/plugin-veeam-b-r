@@ -245,7 +245,7 @@ return '
 
 <script>
 $(document).ready(function() {
-    const systemJobs = ["Malware Detection", "Configuration Database Resynchronize", "Security & Compliance Analyzer"];
+    const systemJobs = ["Malware Detection","Backup Configuration Job", "Configuration Database Resynchronize", "Security & Compliance Analyzer"];
     
     function toggleSystemJobs(show) {
         const $table = $("#VeeamPluginSessionTable");

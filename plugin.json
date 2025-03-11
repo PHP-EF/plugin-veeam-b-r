@@ -8,10 +8,10 @@
       "icon": "https://raw.githubusercontent.com/TehMuffinMoo/php-ef-plugin-cmdb/main/logo.png",
       "contact": "https://github.com/PHP-EF/plugin-veeam-b-r/issues",
       "link": "https://github.com/PHP-EF/plugin-veeam-b-r",
-      "version": "1.0.5",
+      "version": "1.0.6",
       "minimum_php-ef_version": "0.7.2",
       "release_date": "2025-01-05",
-      "last_updated": "2025-01-27",
+      "last_updated": "2025-03-11",
       "github_folder": ""
     }
 ]
